@@ -1,0 +1,66 @@
+﻿<div class="container ">
+    <div class="row " style="margin-top: 2%;">
+        <div class="mb-3">
+            <label for="Titulo"><Icon class="icon" Elements="@Icons.Titulo" /> | Título</label>
+            <input type="text" class="form-control" name="Titulo" @bind-value="Titulo" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="mb-3">
+            <label for="formFile" class="form-label"><Icon class="icon" Elements="@Icons.Video" /> | Video</label>
+            <InputFile OnChange="@HandleFileSelected" class="form-control" />
+        </div>
+    </div>
+    <div class="row" style="justify-content: space-between;">
+        <div class="mb-3 col-md-6">
+            <label for="formFile" class="form-label"><Icon class="icon" Elements="@Icons.Image" /> | Capa </label>
+            @if (ImageDataUrl?.Length > 0)
+            {
+                <img class="capa" src="@ImageDataUrl" />
+            }
+            <label class="btn btn-primary">
+                Escolher
+            <InputFile class="form-control" hidden OnChange="@ImageHandleSelected"/>
+            </label>
+
+        </div>
+        <div class="col-md-2">
+            <Button BackgroundColor="TablerColor.Primary" Size="ButtonSize.Large" Type="ButtonType.Button" IsLoading="@isLoadingButton" OnClick="SendFileTest" Text="Enviar" />
+        </div>
+    </div>
+</div>
+
+@code {
+    bool isLoadingButton;
+    string ImageDataUrl;
+    IBrowserFile file;
+    IBrowserFile image;
+    public string Titulo;
+
+
+    async Task ImageHandleSelected(InputFileChangeEventArgs e)
+    {
+        var format = "image/jpeg";
+        if (e.File.ContentType == format)
+            image = e.File;
+        else
+            return;
+
+        var resizedImageFile = await image.RequestImageFileAsync(format, 200, 200);
+        var buffer = new byte[resizedImageFile.Size];
+        await resizedImageFile.OpenReadStream().ReadAsync(buffer);
+
+        var imageDataUrl = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+        ImageDataUrl = imageDataUrl;
+    }
+
+    void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        file = e.File;
+    }
+
+    void SendFileTest()
+    {
+        isLoadingButton = true;
+    }
+}
