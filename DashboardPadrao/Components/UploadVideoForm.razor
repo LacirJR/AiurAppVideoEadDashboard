@@ -7,12 +7,6 @@
     </div>
     <div class="row">
         <div class="mb-3">
-            <label for="formFile" class="form-label"><Icon class="icon" Elements="@Icons.Video" /> | Video</label>
-            <InputFile OnChange="@HandleFileSelected" class="form-control" />
-        </div>
-    </div>
-    <div class="row" style="justify-content: space-between;">
-        <div class="mb-3 col-md-6">
             <label for="formFile" class="form-label"><Icon class="icon" Elements="@Icons.Image" /> | Capa </label>
             @if (ImageDataUrl?.Length > 0)
             {
@@ -20,8 +14,22 @@
             }
             <label class="btn btn-primary">
                 Escolher
-            <InputFile class="form-control" hidden OnChange="@ImageHandleSelected"/>
+                <InputFile class="form-control" hidden OnChange="@ImageHandleSelected" />
             </label>
+            @if (ErroCapa)
+            {
+                <span class="erroTag">Não é possível adicionar esse arquivo! Por favor selecione algum arquivo JPEG ou PNG!</span>
+            }
+        </div>
+    </div>
+    <div class="row" style="justify-content: space-between;">
+        <div class="mb-3 col-md-6">
+            <label for="formFile" class="form-label"><Icon class="icon" Elements="@Icons.Video" /> | Video</label>
+            <InputFile OnChange="@HandleFileSelected" class="form-control" />
+            @if (ErroVideo)
+            {
+                <span class="erroTag">Não é possível adicionar esse arquivo! Por favor selecione algum arquivo MP4,MOV ou AVI!</span>
+            }
 
         </div>
         <div class="col-md-2">
@@ -31,32 +39,44 @@
 </div>
 
 @code {
-    bool isLoadingButton;
-    string ImageDataUrl;
     IBrowserFile file;
     IBrowserFile image;
+    bool isLoadingButton;
+    string ImageDataUrl;
+    bool ErroCapa;
+    bool ErroVideo;
     public string Titulo;
 
 
     async Task ImageHandleSelected(InputFileChangeEventArgs e)
     {
-        var format = "image/jpeg";
-        if (e.File.ContentType == format)
-            image = e.File;
-        else
+        var formats = new string[] { "image/jpeg", "image/jpg", "image/png" };
+        if (!formats.Contains(e.File.ContentType))
+        {
+            ErroCapa = true;
             return;
-
-        var resizedImageFile = await image.RequestImageFileAsync(format, 200, 200);
+        }
+        ErroCapa = false;
+        image = e.File;
+        var newFormat = "image/jpeg";
+        var resizedImageFile = await image.RequestImageFileAsync(newFormat, 300, 300);
         var buffer = new byte[resizedImageFile.Size];
         await resizedImageFile.OpenReadStream().ReadAsync(buffer);
 
-        var imageDataUrl = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+        var imageDataUrl = $"data:{newFormat};base64,{Convert.ToBase64String(buffer)}";
         ImageDataUrl = imageDataUrl;
     }
 
     void HandleFileSelected(InputFileChangeEventArgs e)
     {
-        file = e.File;
+        var formats = new string[] { "video/mp4", "video/mov", "video/avi" };
+        if (!formats.Contains(e.File.ContentType))
+        {
+            ErroVideo = true;
+            return;
+        }
+        ErroVideo = false;
+        file = e.File.;
     }
 
     void SendFileTest()
