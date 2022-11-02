@@ -1,4 +1,15 @@
-﻿<div class="container ">
+﻿@using TabBlazor.Services
+@inject ToastService ToastService
+@inject NavigationManager _navigationManager
+<div class="container ">
+    @if (MensagemAlerta?.Length > 0)
+    {
+        <Alert BackgroundColor="@AlertaColor" Important>
+            @MensagemAlerta
+        </Alert>
+    }
+
+
     <div class="row " style="margin-top: 2%;">
         <div class="mb-3">
             <label for="Titulo"><Icon class="icon" Elements="@Icons.Titulo" /> | Título</label>
@@ -35,8 +46,10 @@
         <div class="col-md-2">
             <Button BackgroundColor="TablerColor.Primary" Size="ButtonSize.Large" Type="ButtonType.Button" IsLoading="@isLoadingButton" OnClick="SendFileTest" Text="Enviar" />
         </div>
+
     </div>
 </div>
+
 
 @code {
     IBrowserFile file;
@@ -45,9 +58,37 @@
     string ImageDataUrl;
     bool ErroCapa;
     bool ErroVideo;
-    public string Titulo;
+    string Titulo;
+    string MensagemAlerta;
+    TabBlazor.TablerColor AlertaColor;
+    ToastOptions toastOptions = new ToastOptions()
+        {
+            ShowHeader = false,
+            ShowProgress = true,
+            Delay = 5
+        };
+    Timer timer = new Timer(){
 
+    };
 
+    protected override void OnInitialized()
+    {
+        timer.Interval = 1000;
+        timer.Elapsed += async (_, _) => await ReloadPage();
+        timer.Enabled = true;
+        timer.Start();
+
+        base.OnInitialized();
+    }
+
+    async Task ReloadPage()
+    {
+        if (!string.IsNullOrEmpty(MensagemAlerta) && MensagemAlerta.Contains("sucesso"))
+        {
+            await Task.Delay(3000);
+            _navigationManager.NavigateTo(_navigationManager.Uri, true);
+        }
+    }
     async Task ImageHandleSelected(InputFileChangeEventArgs e)
     {
         var formats = new string[] { "image/jpeg", "image/jpg", "image/png" };
@@ -76,11 +117,62 @@
             return;
         }
         ErroVideo = false;
-        file = e.File.;
+        file = e.File;
     }
 
-    void SendFileTest()
+    async Task SendFileTest()
     {
+        MensagemAlerta = string.Empty;
         isLoadingButton = true;
+
+        if (string.IsNullOrEmpty(Titulo))
+        {
+            isLoadingButton = false;
+            ShowAlerta("Por favor adicione um Titulo.", false);
+            await ShowToast(MensagemAlerta);
+            return;
+        }
+
+        if (image == null)
+        {
+            isLoadingButton = false;
+            ShowAlerta("Por favor adicione uma capa.", false);
+            await ShowToast(MensagemAlerta);
+            return;
+        }
+
+        if (file == null)
+        {
+            isLoadingButton = false;
+            ShowAlerta("Por favor adicione o vídeo.", false);
+            await ShowToast(MensagemAlerta);
+            return;
+        }
+
+        ShowAlerta("Vídeo enviado com sucesso!", true);
+        await ShowToast(MensagemAlerta);
+        isLoadingButton = false;
     }
+
+    void ShowAlerta(string mensagemAlerta, bool isSucess)
+    {
+        if (isSucess)
+        {
+            AlertaColor = TablerColor.Success;
+            MensagemAlerta = mensagemAlerta;
+        }
+        else
+        {
+            AlertaColor = TablerColor.Danger;
+            MensagemAlerta = mensagemAlerta;
+        }
+
+
+    }
+
+    async Task ShowToast(string message, string title = "", string subTitle = "") => await ToastService.AddToastAsync(new ToastModel { Title = title, SubTitle = subTitle, Message = message, Options = toastOptions });
+
+
+
+
 }
